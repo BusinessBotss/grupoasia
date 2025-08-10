@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GM Broadcast Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#0a0a0a',
+                        'dark-card': '#1a1a1a',
+                        'dark-border': '#2a2a2a',
+                        'accent': '#00d4aa',
+                        'accent-hover': '#00b894'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .status-chip {
+            transition: all 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-white min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-dark-border bg-dark-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-dark-bg" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.488"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-semibold" data-i18n="app.title">GM Broadcast Manager</h1>
+                        <p class="text-sm text-gray-400" data-i18n="app.subtitle">WhatsApp Diffusion by Role & Location</p>
+                    </div>
+                </div>
+                
+                <!-- Language Switcher -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex bg-dark-card rounded-lg p-1">
+                        <button onclick="switchLanguage('es')" class="lang-btn px-3 py-1 rounded text-sm font-medium transition-all" data-lang="es">ES</button>
+                        <button onclick="switchLanguage('en')" class="lang-btn px-3 py-1 rounded text-sm font-medium transition-all" data-lang="en">EN</button>
+                        <button onclick="switchLanguage('zh')" class="lang-btn px-3 py-1 rounded text-sm font-medium transition-all" data-lang="zh">中</button>
+                    </div>
+                    
+                    <!-- Navigation -->
+                    <nav class="flex space-x-1">
+                        <button onclick="showView('compose')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all" data-view="compose" data-i18n="nav.compose">Compose</button>
+                        <button onclick="showView('templates')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all" data-view="templates" data-i18n="nav.templates">Templates</button>
+                        <button onclick="showView('history')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all" data-view="history" data-i18n="nav.history">History</button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Compose View -->
+        <div id="compose-view" class="view-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column - Selection -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Location Selection -->
+                    <div class="glass-effect rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span data-i18n="compose.location">Select Location</span>
+                        </h3>
+                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-3" id="location-grid">
+                            <!-- Locations will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Role Selection -->
+                    <div class="glass-effect rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                            </svg>
+                            <span data-i18n="compose.role">Select Role</span>
+                        </h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="role-grid">
+                            <!-- Roles will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Template Selection -->
+                    <div class="glass-effect rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clip-rule="evenodd"/>
+                            </svg>
+                            <span data-i18n="compose.template">Select Template</span>
+                        </h3>
+                        
+                        <!-- Template Search -->
+                        <div class="mb-4">
+                            <input type="text" id="template-search" placeholder="Search templates..." 
+                                   class="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:border-accent focus:outline-none"
+                                   data-i18n-placeholder="compose.searchTemplates">
+                        </div>
+                        
+                        <div class="space-y-3" id="template-list">
+                            <!-- Templates will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Optional Note -->
+                    <div class="glass-effect rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                            </svg>
+                            <span data-i18n="compose.note">Additional Note</span>
+                            <span class="text-sm text-gray-400 ml-2" data-i18n="compose.optional">(Optional)</span>
+                        </h3>
+                        <textarea id="note-field" rows="3" maxlength="240" 
+                                  class="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:border-accent focus:outline-none resize-none"
+                                  placeholder="Add a brief note or variable..."
+                                  data-i18n-placeholder="compose.notePlaceholder"></textarea>
+                        <div class="flex justify-between mt-2">
+                            <span class="text-sm text-gray-400" data-i18n="compose.noteHelp">Brief context or variables for the message</span>
+                            <span class="text-sm text-gray-400"><span id="note-count">0</span>/240</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Preview & Send -->
+                <div class="space-y-6">
+                    <!-- Preview -->
+                    <div class="glass-effect rounded-xl p-6 sticky top-24">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                            </svg>
+                            <span data-i18n="compose.preview">Preview</span>
+                        </h3>
+                        
+                        <div class="bg-dark-bg rounded-lg p-4 border border-dark-border mb-6">
+                            <div class="text-sm text-gray-400 mb-2" data-i18n="compose.command">Command:</div>
+                            <div class="font-mono text-accent" id="command-preview">/role[location]: Select template first</div>
+                        </div>
+
+                        <div class="bg-dark-bg rounded-lg p-4 border border-dark-border mb-6">
+                            <div class="text-sm text-gray-400 mb-2" data-i18n="compose.message">Message:</div>
+                            <div class="text-white" id="message-preview" data-i18n="compose.selectTemplate">Select a template to preview the message</div>
+                        </div>
+
+                        <!-- Send Button -->
+                        <button id="send-btn" onclick="sendBroadcast()" disabled
+                                class="w-full bg-accent hover:bg-accent-hover disabled:bg-gray-600 disabled:cursor-not-allowed text-dark-bg font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                            </svg>
+                            <span data-i18n="compose.send">Send Broadcast</span>
+                        </button>
+
+                        <!-- Status Display -->
+                        <div id="status-display" class="mt-4 hidden">
+                            <div class="flex items-center justify-center space-x-2 p-3 rounded-lg bg-dark-bg border border-dark-border">
+                                <div class="pulse-dot w-2 h-2 bg-accent rounded-full"></div>
+                                <span class="text-sm" id="status-text">Sending...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Templates View -->
+        <div id="templates-view" class="view-content hidden">
+            <div class="glass-effect rounded-xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold" data-i18n="templates.title">Message Templates</h2>
+                    <button onclick="showTemplateModal()" class="bg-accent hover:bg-accent-hover text-dark-bg font-semibold py-2 px-4 rounded-lg transition-all">
+                        <span data-i18n="templates.create">Create Template</span>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="templates-grid">
+                    <!-- Templates will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- History View -->
+        <div id="history-view" class="view-content hidden">
+            <div class="glass-effect rounded-xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold" data-i18n="history.title">Broadcast History</h2>
+                    <button onclick="exportHistory()" class="bg-accent hover:bg-accent-hover text-dark-bg font-semibold py-2 px-4 rounded-lg transition-all">
+                        <span data-i18n="history.export">Export CSV</span>
+                    </button>
+                </div>
+                
+                <!-- Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <input type="date" id="date-from" class="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white">
+                    <input type="date" id="date-to" class="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white">
+                    <select id="filter-location" class="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white">
+                        <option value="" data-i18n="history.allLocations">All Locations</option>
+                    </select>
+                    <select id="filter-status" class="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white">
+                        <option value="" data-i18n="history.allStatuses">All Statuses</option>
+                        <option value="sent" data-i18n="history.sent">Sent</option>
+                        <option value="failed" data-i18n="history.failed">Failed</option>
+                        <option value="retrying" data-i18n="history.retrying">Retrying</option>
+                    </select>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="border-b border-dark-border">
+                            <tr class="text-left">
+                                <th class="pb-3 font-medium" data-i18n="history.date">Date</th>
+                                <th class="pb-3 font-medium" data-i18n="history.location">Location</th>
+                                <th class="pb-3 font-medium" data-i18n="history.role">Role</th>
+                                <th class="pb-3 font-medium" data-i18n="history.message">Message</th>
+                                <th class="pb-3 font-medium" data-i18n="history.status">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table">
+                            <!-- History entries will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // Global state
+        let currentLang = 'es';
+        let selectedLocation = null;
+        let selectedRole = null;
+        let selectedTemplate = null;
+        let broadcastState = 'IDLE';
+
+        // Sample data
+        const locations = [
+            { id: 'R1', code: 'R1', name: 'Restaurant Centro' },
+            { id: 'R2', code: 'R2', name: 'Restaurant Norte' },
+            { id: 'R3', code: 'R3', name: 'Restaurant Sur' },
+            { id: 'R4', code: 'R4', name: 'Restaurant Este' },
+            { id: 'R5', code: 'R5', name: 'Restaurant Oeste' }
+        ];
+
+        const roles = [
+            { id: 'CHEF', code: 'CHEF', name: { es: 'Chef', en: 'Chef', zh: '厨师' }, synonyms: ['chef', 'cocina', 'kitchen'] },
+            { id: 'BARRA', code: 'BARRA', name: { es: 'Barra', en: 'Bar', zh: '酒吧' }, synonyms: ['bar', 'barra', 'bartender'] },
+            { id: 'SALA', code: 'SALA', name: { es: 'Sala', en: 'Service', zh: '服务' }, synonyms: ['sala', 'service', 'waiter'] },
+            { id: 'ADMIN', code: 'ADMIN', name: { es: 'Admin', en: 'Admin', zh: '管理' }, synonyms: ['admin', 'manager', 'gerente'] }
+        ];
+
+        const templates = [
+            {
+                id: 1,
+                title: { es: 'Cambio de Gramaje', en: 'Portion Change', zh: '分量变更' },
+                body: { es: 'Cambiar gramaje del {producto} a {cantidad}g', en: 'Change {producto} portion to {cantidad}g', zh: '将{producto}分量改为{cantidad}g' },
+                tags: ['cocina', 'kitchen', 'portions'],
+                lang: 'multi'
+            },
+            {
+                id: 2,
+                title: { es: 'Nuevo Plato Especial', en: 'New Special Dish', zh: '新特色菜' },
+                body: { es: 'Hoy tenemos plato especial: {plato}. Precio: ${precio}', en: 'Today\'s special: {plato}. Price: ${precio}', zh: '今日特色菜：{plato}。价格：${precio}' },
+                tags: ['menu', 'special', 'daily'],
+                lang: 'multi'
+            },
+            {
+                id: 3,
+                title: { es: 'Limpieza Urgente', en: 'Urgent Cleaning', zh: '紧急清洁' },
+                body: { es: 'Limpieza urgente requerida en {area}', en: 'Urgent cleaning required in {area}', zh: '{area}需要紧急清洁' },
+                tags: ['cleaning', 'urgent', 'maintenance'],
+                lang: 'multi'
+            }
+        ];
+
+        const broadcastHistory = [
+            {
+                id: 1,
+                date: '2024-01-15 14:30',
+                location: 'R1',
+                role: 'CHEF',
+                message: 'Cambiar gramaje del salmón a 150g',
+                status: 'sent'
+            },
+            {
+                id: 2,
+                date: '2024-01-15 15:45',
+                location: 'R2',
+                role: 'BARRA',
+                message: 'Nuevo cóctel especial disponible',
+                status: 'failed'
+            }
+        ];
+
+        // Translations
+        const translations = {
+            es: {
+                'app.title': 'GM Broadcast Manager',
+                'app.subtitle': 'Difusiones WhatsApp por Rol × Local',
+                'nav.compose': 'Componer',
+                'nav.templates': 'Plantillas',
+                'nav.history': 'Historial',
+                'compose.location': 'Seleccionar Local',
+                'compose.role': 'Seleccionar Rol',
+                'compose.template': 'Seleccionar Plantilla',
+                'compose.note': 'Nota Adicional',
+                'compose.optional': '(Opcional)',
+                'compose.preview': 'Vista Previa',
+                'compose.command': 'Comando:',
+                'compose.message': 'Mensaje:',
+                'compose.send': 'Enviar Difusión',
+                'compose.selectTemplate': 'Selecciona una plantilla para previsualizar',
+                'compose.searchTemplates': 'Buscar plantillas...',
+                'compose.notePlaceholder': 'Añadir nota breve o variable...',
+                'compose.noteHelp': 'Contexto breve o variables para el mensaje',
+                'templates.title': 'Plantillas de Mensaje',
+                'templates.create': 'Crear Plantilla',
+                'history.title': 'Historial de Difusiones',
+                'history.export': 'Exportar CSV',
+                'history.allLocations': 'Todos los Locales',
+                'history.allStatuses': 'Todos los Estados',
+                'history.sent': 'Enviado',
+                'history.failed': 'Fallido',
+                'history.retrying': 'Reintentando',
+                'history.date': 'Fecha',
+                'history.location': 'Local',
+                'history.role': 'Rol',
+                'history.message': 'Mensaje',
+                'history.status': 'Estado'
+            },
+            en: {
+                'app.title': 'GM Broadcast Manager',
+                'app.subtitle': 'WhatsApp Diffusion by Role & Location',
+                'nav.compose': 'Compose',
+                'nav.templates': 'Templates',
+                'nav.history': 'History',
+                'compose.location': 'Select Location',
+                'compose.role': 'Select Role',
+                'compose.template': 'Select Template',
+                'compose.note': 'Additional Note',
+                'compose.optional': '(Optional)',
+                'compose.preview': 'Preview',
+                'compose.command': 'Command:',
+                'compose.message': 'Message:',
+                'compose.send': 'Send Broadcast',
+                'compose.selectTemplate': 'Select a template to preview the message',
+                'compose.searchTemplates': 'Search templates...',
+                'compose.notePlaceholder': 'Add brief note or variable...',
+                'compose.noteHelp': 'Brief context or variables for the message',
+                'templates.title': 'Message Templates',
+                'templates.create': 'Create Template',
+                'history.title': 'Broadcast History',
+                'history.export': 'Export CSV',
+                'history.allLocations': 'All Locations',
+                'history.allStatuses': 'All Statuses',
+                'history.sent': 'Sent',
+                'history.failed': 'Failed',
+                'history.retrying': 'Retrying',
+                'history.date': 'Date',
+                'history.location': 'Location',
+                'history.role': 'Role',
+                'history.message': 'Message',
+                'history.status': 'Status'
+            },
+            zh: {
+                'app.title': 'GM 广播管理器',
+                'app.subtitle': '按角色和地点的WhatsApp广播',
+                'nav.compose': '编写',
+                'nav.templates': '模板',
+                'nav.history': '历史',
+                'compose.location': '选择地点',
+                'compose.role': '选择角色',
+                'compose.template': '选择模板',
+                'compose.note': '附加说明',
+                'compose.optional': '(可选)',
+                'compose.preview': '预览',
+                'compose.command': '命令：',
+                'compose.message': '消息：',
+                'compose.send': '发送广播',
+                'compose.selectTemplate': '选择模板以预览消息',
+                'compose.searchTemplates': '搜索模板...',
+                'compose.notePlaceholder': '添加简短说明或变量...',
+                'compose.noteHelp': '消息的简短上下文或变量',
+                'templates.title': '消息模板',
+                'templates.create': '创建模板',
+                'history.title': '广播历史',
+                'history.export': '导出CSV',
+                'history.allLocations': '所有地点',
+                'history.allStatuses': '所有状态',
+                'history.sent': '已发送',
+                'history.failed': '失败',
+                'history.retrying': '重试中',
+                'history.date': '日期',
+                'history.location': '地点',
+                'history.role': '角色',
+                'history.message': '消息',
+                'history.status': '状态'
+            }
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            updateLanguage();
+            setupEventListeners();
+        });
+
+        function initializeApp() {
+            renderLocations();
+            renderRoles();
+            renderTemplates();
+            renderHistory();
+            updateSendButton();
+        }
+
+        function setupEventListeners() {
+            // Note field character counter
+            const noteField = document.getElementById('note-field');
+            const noteCount = document.getElementById('note-count');
+            
+            noteField.addEventListener('input', function() {
+                noteCount.textContent = this.value.length;
+                updatePreview();
+            });
+
+            // Template search
+            const templateSearch = document.getElementById('template-search');
+            templateSearch.addEventListener('input', function() {
+                renderTemplates(this.value);
+            });
+        }
+
+        function renderLocations() {
+            const grid = document.getElementById('location-grid');
+            grid.innerHTML = locations.map(location => `
+                <button onclick="selectLocation('${location.id}')" 
+                        class="location-btn p-3 rounded-lg border border-dark-border hover:border-accent transition-all text-center ${selectedLocation === location.id ? 'bg-accent text-dark-bg border-accent' : 'bg-dark-card text-white'}"
+                        data-location="${location.id}">
+                    <div class="font-semibold">${location.code}</div>
+                    <div class="text-xs opacity-75">${location.name}</div>
+                </button>
+            `).join('');
+        }
+
+        function renderRoles() {
+            const grid = document.getElementById('role-grid');
+            grid.innerHTML = roles.map(role => `
+                <button onclick="selectRole('${role.id}')" 
+                        class="role-btn p-3 rounded-lg border border-dark-border hover:border-accent transition-all text-center ${selectedRole === role.id ? 'bg-accent text-dark-bg border-accent' : 'bg-dark-card text-white'}"
+                        data-role="${role.id}">
+                    <div class="font-semibold">${role.name[currentLang]}</div>
+                </button>
+            `).join('');
+        }
+
+        function renderTemplates(searchQuery = '') {
+            const container = document.getElementById('template-list');
+            const filteredTemplates = templates.filter(template => 
+                !searchQuery || 
+                template.title[currentLang].toLowerCase().includes(searchQuery.toLowerCase()) ||
+                template.body[currentLang].toLowerCase().includes(searchQuery.toLowerCase()) ||
+                template.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+            );
+
+            container.innerHTML = filteredTemplates.map(template => `
+                <div onclick="selectTemplate(${template.id})" 
+                     class="template-item p-4 rounded-lg border border-dark-border hover:border-accent transition-all cursor-pointer ${selectedTemplate === template.id ? 'bg-accent/10 border-accent' : 'bg-dark-card'}"
+                     data-template="${template.id}">
+                    <div class="font-semibold mb-2">${template.title[currentLang]}</div>
+                    <div class="text-sm text-gray-400 mb-2">${template.body[currentLang]}</div>
+                    <div class="flex flex-wrap gap-1">
+                        ${template.tags.map(tag => `<span class="px-2 py-1 bg-dark-bg rounded text-xs">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderHistory() {
+            const tbody = document.getElementById('history-table');
+            tbody.innerHTML = broadcastHistory.map(entry => `
+                <tr class="border-b border-dark-border">
+                    <td class="py-3">${entry.date}</td>
+                    <td class="py-3">${entry.location}</td>
+                    <td class="py-3">${entry.role}</td>
+                    <td class="py-3 max-w-xs truncate">${entry.message}</td>
+                    <td class="py-3">
+                        <span class="status-chip px-2 py-1 rounded text-xs ${getStatusClass(entry.status)}">
+                            ${getStatusText(entry.status)}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function selectLocation(locationId) {
+            selectedLocation = locationId;
+            renderLocations();
+            updatePreview();
+            updateSendButton();
+        }
+
+        function selectRole(roleId) {
+            selectedRole = roleId;
+            renderRoles();
+            updatePreview();
+            updateSendButton();
+        }
+
+        function selectTemplate(templateId) {
+            selectedTemplate = templateId;
+            renderTemplates();
+            updatePreview();
+            updateSendButton();
+        }
+
+        function updatePreview() {
+            const commandPreview = document.getElementById('command-preview');
+            const messagePreview = document.getElementById('message-preview');
+            const noteField = document.getElementById('note-field');
+
+            if (selectedRole && selectedLocation && selectedTemplate) {
+                const role = roles.find(r => r.id === selectedRole);
+                const location = locations.find(l => l.id === selectedLocation);
+                const template = templates.find(t => t.id === selectedTemplate);
+                const note = noteField.value;
+
+                commandPreview.textContent = `/${role.code.toLowerCase()}[${location.code}]: ${template.title[currentLang]}${note ? ' {' + note + '}' : ''}`;
+                messagePreview.textContent = template.body[currentLang] + (note ? ` (${note})` : '');
+            } else {
+                commandPreview.textContent = '/role[location]: Select template first';
+                messagePreview.textContent = translations[currentLang]['compose.selectTemplate'];
+            }
+        }
+
+        function updateSendButton() {
+            const sendBtn = document.getElementById('send-btn');
+            const canSend = selectedLocation && selectedRole && selectedTemplate && broadcastState === 'IDLE';
+            sendBtn.disabled = !canSend;
+        }
+
+        function sendBroadcast() {
+            if (!selectedLocation || !selectedRole || !selectedTemplate) return;
+
+            broadcastState = 'SENDING';
+            updateSendButton();
+            
+            const statusDisplay = document.getElementById('status-display');
+            const statusText = document.getElementById('status-text');
+            
+            statusDisplay.classList.remove('hidden');
+            statusText.textContent = 'Enviando...';
+
+            // Simulate API call
+            setTimeout(() => {
+                const success = Math.random() > 0.3; // 70% success rate
+                
+                if (success) {
+                    broadcastState = 'SUCCESS';
+                    statusText.textContent = '✅ Enviado exitosamente';
+                    statusDisplay.querySelector('div').className = 'flex items-center justify-center space-x-2 p-3 rounded-lg bg-green-900/20 border border-green-500';
+                    
+                    showToast('Mensaje enviado exitosamente', 'success');
+                    
+                    // Add to history
+                    const role = roles.find(r => r.id === selectedRole);
+                    const location = locations.find(l => l.id === selectedLocation);
+                    const template = templates.find(t => t.id === selectedTemplate);
+                    const note = document.getElementById('note-field').value;
+                    
+                    broadcastHistory.unshift({
+                        id: Date.now(),
+                        date: new Date().toLocaleString(),
+                        location: location.code,
+                        role: role.code,
+                        message: template.body[currentLang] + (note ? ` (${note})` : ''),
+                        status: 'sent'
+                    });
+                    
+                    renderHistory();
+                    
+                    // Reset form after 2 seconds
+                    setTimeout(() => {
+                        resetForm();
+                    }, 2000);
+                } else {
+                    broadcastState = 'FAILED';
+                    statusText.textContent = '❌ Error en el envío';
+                    statusDisplay.querySelector('div').className = 'flex items-center justify-center space-x-2 p-3 rounded-lg bg-red-900/20 border border-red-500';
+                    
+                    showToast('Error al enviar mensaje', 'error');
+                    
+                    setTimeout(() => {
+                        broadcastState = 'IDLE';
+                        statusDisplay.classList.add('hidden');
+                        updateSendButton();
+                    }, 3000);
+                }
+            }, 2000);
+        }
+
+        function resetForm() {
+            selectedLocation = null;
+            selectedRole = null;
+            selectedTemplate = null;
+            broadcastState = 'IDLE';
+            
+            document.getElementById('note-field').value = '';
+            document.getElementById('note-count').textContent = '0';
+            document.getElementById('status-display').classList.add('hidden');
+            
+            renderLocations();
+            renderRoles();
+            renderTemplates();
+            updatePreview();
+            updateSendButton();
+        }
+
+        function showView(viewName) {
+            // Hide all views
+            document.querySelectorAll('.view-content').forEach(view => {
+                view.classList.add('hidden');
+            });
+            
+            // Show selected view
+            document.getElementById(viewName + '-view').classList.remove('hidden');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-accent', 'text-dark-bg');
+                btn.classList.add('text-gray-400', 'hover:text-white');
+            });
+            
+            document.querySelector(`[data-view="${viewName}"]`).classList.add('bg-accent', 'text-dark-bg');
+            document.querySelector(`[data-view="${viewName}"]`).classList.remove('text-gray-400', 'hover:text-white');
+        }
+
+        function switchLanguage(lang) {
+            currentLang = lang;
+            document.documentElement.lang = lang;
+            
+            // Update language buttons
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('bg-accent', 'text-dark-bg');
+                btn.classList.add('text-gray-400');
+            });
+            
+            document.querySelector(`[data-lang="${lang}"]`).classList.add('bg-accent', 'text-dark-bg');
+            document.querySelector(`[data-lang="${lang}"]`).classList.remove('text-gray-400');
+            
+            updateLanguage();
+            renderRoles();
+            renderTemplates();
+            updatePreview();
+        }
+
+        function updateLanguage() {
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[currentLang][key]) {
+                    element.textContent = translations[currentLang][key];
+                }
+            });
+            
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-i18n-placeholder');
+                if (translations[currentLang][key]) {
+                    element.placeholder = translations[currentLang][key];
+                }
+            });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg fade-in`;
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'sent': return 'bg-green-600 text-white';
+                case 'failed': return 'bg-red-600 text-white';
+                case 'retrying': return 'bg-yellow-600 text-dark-bg';
+                default: return 'bg-gray-600 text-white';
+            }
+        }
+
+        function getStatusText(status) {
+            const statusTexts = {
+                sent: { es: 'Enviado', en: 'Sent', zh: '已发送' },
+                failed: { es: 'Fallido', en: 'Failed', zh: '失败' },
+                retrying: { es: 'Reintentando', en: 'Retrying', zh: '重试中' }
+            };
+            
+            return statusTexts[status] ? statusTexts[status][currentLang] : status;
+        }
+
+        function showTemplateModal() {
+            showToast('Template creation feature coming soon', 'info');
+        }
+
+        function exportHistory() {
+            const csv = 'Date,Location,Role,Message,Status\n' + 
+                broadcastHistory.map(entry => 
+                    `"${entry.date}","${entry.location}","${entry.role}","${entry.message}","${entry.status}"`
+                ).join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'broadcast-history.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            showToast('History exported successfully', 'success');
+        }
+
+        // Initialize default view
+        showView('compose');
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96d20e7f000f0345',t:'MTc1NDg1NTc4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
